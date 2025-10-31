@@ -1,0 +1,71 @@
+services:
+  # Main web application
+  - type: web
+    name: emp-attend-app
+    env: node
+    region: oregon # or your preferred region
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false # Set this manually in Render dashboard
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false # Set this manually in Render dashboard
+      - key: SUPABASE_SERVICE_KEY
+        sync: false # Set this manually in Render dashboard
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: emp-attend-redis
+          property: connectionString
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+  # Background worker service
+  - type: worker
+    name: emp-attend-worker
+    env: node
+    region: oregon
+    buildCommand: npm install
+    startCommand: node dist/workers/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: emp-attend-redis
+          property: connectionString
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+
+  # Redis instance
+  - type: redis
+    name: emp-attend-redis
+    ipAllowList: [] # Only allow internal connections
+    plan: free # Adjust based on your needs
