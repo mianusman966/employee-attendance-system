@@ -1,14 +1,14 @@
+-- Enable RLS and create necessary roles
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- Create custom types
 CREATE TYPE user_role AS ENUM ('admin', 'employee');
 CREATE TYPE attendance_status AS ENUM ('checked_in', 'checked_out');
 CREATE TYPE leave_status AS ENUM ('pending', 'approved', 'rejected');
 
--- Enable Row Level Security
-ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
-
--- Create profiles table that extends the auth.users
+-- Create profiles table without foreign key constraint to auth.users initially
 CREATE TABLE profiles (
-    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email TEXT UNIQUE NOT NULL,
     role user_role DEFAULT 'employee',
     full_name TEXT,
