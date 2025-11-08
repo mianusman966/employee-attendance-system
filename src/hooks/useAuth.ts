@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../types/database';
+import { logLogout } from '../lib/activity-logger';
 
 export function useAuth() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +55,14 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
+      // Log logout before signing out
+      if (profile?.role) {
+        await logLogout(profile.role);
+      }
+      
       await supabase.auth.signOut();
+      router.push('/auth/login');
+      router.refresh();
     } catch (error) {
       console.error('Error signing out:', error);
     }

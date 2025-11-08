@@ -1,11 +1,15 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import Link from 'next/link';
 import { useAuth } from '../../hooks/useAuth';
+import dynamic from 'next/dynamic';
+
+const AddUserModal = dynamic(() => import('../dashboard/AddUserModal'), { ssr: false });
+const AIChatbot = dynamic(() => import('../dashboard/AIChatbot'), { ssr: false });
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(' ');
@@ -14,6 +18,7 @@ function classNames(...classes: string[]) {
 export default function BaseLayout({ children }: { children: React.ReactNode }) {
   const { profile, signOut } = useAuth();
   const pathname = usePathname();
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navigation = [
     ...(profile?.role === 'admin'
@@ -21,7 +26,10 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
           { name: 'Dashboard', href: '/dashboard' },
           { name: 'Employees', href: '/dashboard/employees' },
           { name: 'Departments', href: '/dashboard/departments' },
+          { name: 'Attendance', href: '/attendance' },
+          { name: 'Manual Attendance', href: '/attendance/manual' },
           { name: 'Reports', href: '/dashboard/reports' },
+          { name: 'System', href: '/dashboard/system' },
         ]
       : [{ name: 'Attendance', href: '/attendance' }]),
   ];
@@ -55,6 +63,26 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
                   </div>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:items-center">
+                  {profile?.role === 'admin' && (
+                    <>
+                      <button
+                        onClick={() => setIsChatOpen(true)}
+                        className="mr-4 inline-flex items-center rounded-md bg-gradient-to-r from-purple-600 to-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:from-purple-700 hover:to-blue-700 transition-all"
+                        title="AI Assistant"
+                      >
+                        <svg className="w-5 h-5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        AI Assistant
+                      </button>
+                      <button
+                        onClick={() => (document.getElementById('add-user-modal') as HTMLDialogElement)?.showModal()}
+                        className="mr-4 inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                      >
+                        Add User
+                      </button>
+                    </>
+                  )}
                   <Menu as="div" className="relative ml-3">
                     <div>
                       <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
@@ -81,8 +109,8 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
                             <button
                               onClick={() => signOut()}
                               className={classNames(
-                                active ? 'bg-gray-100' : '',
-                                'block w-full px-4 py-2 text-left text-sm text-gray-700'
+                                active ? 'bg-red-50' : '',
+                                'block w-full px-4 py-2 text-left text-sm text-red-600 font-medium hover:bg-red-50'
                               )}
                             >
                               Sign out
@@ -133,15 +161,26 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
                     </div>
                   </div>
                   <div className="ml-3">
+                    <div className="text-base font-medium text-gray-800">
+                      {profile?.full_name || 'User'}
+                    </div>
                     <div className="text-sm font-medium text-gray-500">
                       {profile?.email}
                     </div>
                   </div>
                 </div>
                 <div className="mt-3 space-y-1">
+                  {profile?.role === 'admin' && (
+                    <button
+                      onClick={() => (document.getElementById('add-user-modal') as HTMLDialogElement)?.showModal()}
+                      className="block w-full px-4 py-2 text-left text-base font-medium text-blue-600 hover:bg-gray-100 hover:text-blue-800"
+                    >
+                      Add User
+                    </button>
+                  )}
                   <button
                     onClick={() => signOut()}
-                    className="block w-full px-4 py-2 text-left text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                    className="block w-full px-4 py-2 text-left text-base font-medium text-red-600 hover:bg-gray-100 hover:text-red-800"
                   >
                     Sign out
                   </button>
@@ -155,6 +194,27 @@ export default function BaseLayout({ children }: { children: React.ReactNode }) 
       <div className="py-10">
         <main className="mx-auto max-w-7xl sm:px-6 lg:px-8">{children}</main>
       </div>
+
+      {/* Role badge bottom-right - Shows current user role */}
+      {profile?.role && (
+        <div className="fixed bottom-4 right-4 z-40">
+          <span className="rounded-full bg-gray-900/90 text-white px-3 py-1.5 text-sm font-medium shadow-lg uppercase">
+            {profile.role}
+          </span>
+        </div>
+      )}
+
+      {/* Add User Modal portal */}
+      {profile?.role === 'admin' && <AddUserModal />}
+      
+      {/* AI Assistant (Admin only) */}
+      {profile?.role === 'admin' && (
+        <AIChatbot 
+          isOpen={isChatOpen} 
+          onClose={() => setIsChatOpen(false)} 
+          userName={profile?.full_name || 'Admin'} 
+        />
+      )}
     </div>
   );
 }

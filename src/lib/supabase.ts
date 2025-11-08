@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+// Use Next.js auth helpers so auth cookies are synced with middleware/server
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// This client automatically manages auth cookies via the middleware, so
+// server components and middleware can see the session after sign-in.
+export const supabase = createClientComponentClient();

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthLayout } from '../../../components/auth/AuthLayout';
 import { supabase } from '../../../lib/supabase';
+import { logLogin } from '../../../lib/activity-logger';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,13 +27,31 @@ export default function LoginPage() {
       if (error) throw error;
 
       if (data.session) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.session.user.id)
-          .single();
+        // Prefer an RPC to avoid any chance of RLS recursion or policy mismatches
+        let role: string | null = null;
 
-        router.push(profile?.role === 'admin' ? '/dashboard' : '/attendance');
+        try {
+          const { data: rpcRole, error: rpcErr } = await supabase.rpc('get_my_role');
+          if (rpcErr) throw rpcErr;
+          role = rpcRole as string | null;
+        } catch (e) {
+          // Fallback to direct table read for robustness
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .single();
+          role = (profile as any)?.role ?? null;
+        }
+
+        // Log successful login
+        if (role) {
+          await logLogin(role);
+        }
+
+        // Ensure server/middleware can see the fresh session cookies
+        router.refresh();
+        router.push(role === 'admin' ? '/dashboard' : '/attendance');
       }
     } catch (error: any) {
       setError(error.message);

@@ -1,4 +1,4 @@
-import { Queue, Worker, QueueScheduler } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import { createClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import nodemailer from 'nodemailer';
@@ -35,11 +35,7 @@ export const lateCheckInQueue = new Queue('late-check-in', defaultQueueConfig);
 export const leaveRequestQueue = new Queue('leave-request', defaultQueueConfig);
 export const reportGenerationQueue = new Queue('report-generation', defaultQueueConfig);
 
-// Schedulers to handle delayed jobs
-new QueueScheduler('attendance-reminder', defaultQueueConfig);
-new QueueScheduler('late-check-in', defaultQueueConfig);
-new QueueScheduler('leave-request', defaultQueueConfig);
-new QueueScheduler('report-generation', defaultQueueConfig);
+// BullMQ v5 no longer requires QueueScheduler; delayed/repeatable jobs are handled by the queue itself.
 
 // Attendance reminder worker
 new Worker('attendance-reminder', async (job) => {

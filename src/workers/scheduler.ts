@@ -1,5 +1,13 @@
 import { attendanceReminderQueue, lateCheckInQueue, reportGenerationQueue } from '.';
 import { CronJob } from 'cron';
+import { createClient } from '@supabase/supabase-js';
+
+// Service role Supabase client for background tasks
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { auth: { autoRefreshToken: false, persistSession: false } }
+);
 
 // Schedule attendance reminders every weekday at 9 AM
 new CronJob('0 9 * * 1-5', async () => {

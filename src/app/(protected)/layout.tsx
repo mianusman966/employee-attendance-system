@@ -1,21 +1,15 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+// This layout intentionally avoids server-side Supabase calls.
+// Auth is enforced by middleware (see src/middleware.ts), which
+// redirects unauthenticated users to /auth/login. Keeping this
+// as a simple server component sidesteps cookie API differences
+// across Next.js versions and prevents hydration/runtime errors.
 
-export default async function ProtectedLayout({
+import BaseLayout from '../../components/layouts/BaseLayout';
+
+export default function ProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createServerComponentClient({ cookies });
-
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-
-  if (!session) {
-    redirect('/auth/login');
-  }
-
-  return <>{children}</>;
+  return <BaseLayout>{children}</BaseLayout>;
 }
